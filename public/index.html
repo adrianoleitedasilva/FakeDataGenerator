@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="title">Fake Data Generator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <div>
+          <h1 data-i18n="title">Fake Data Generator</h1>
+          <p data-i18n="subtitle">Build a schema, choose a locale, and generate realistic test data.</p>
+        </div>
+        <div class="lang-switcher">
+          <button class="lang-btn active" data-lang="en" title="English">🇺🇸</button>
+          <button class="lang-btn" data-lang="pt" title="Português (BR)">🇧🇷</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Config -->
+      <section class="section">
+        <div class="config-row">
+          <div class="field-group">
+            <label for="tableName" data-i18n="labelTable">Table / entity name</label>
+            <input type="text" id="tableName" data-i18n-placeholder="placeholderTable" placeholder="users" />
+          </div>
+          <div class="field-group field-group--sm">
+            <label for="rowCount" data-i18n="labelRows">Rows</label>
+            <input type="number" id="rowCount" value="10" min="1" max="5000" />
+          </div>
+          <div class="field-group field-group--sm">
+            <label for="locale" data-i18n="labelLocale">Data locale</label>
+            <select id="locale">
+              <option value="en">English</option>
+              <option value="pt_BR">Português (BR)</option>
+              <option value="es">Español</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Fields -->
+      <section class="section">
+        <div class="section-header">
+          <h2 data-i18n="sectionFields">Fields</h2>
+          <button class="btn btn-outline btn-sm" id="addFieldBtn" data-i18n="btnAddField">+ Add field</button>
+        </div>
+        <div id="fieldsList" class="fields-list">
+          <div class="empty-state" id="emptyState" data-i18n-html="emptyState">
+            No fields yet. Click <strong>+ Add field</strong> to get started.
+          </div>
+        </div>
+      </section>
+
+      <!-- Generate -->
+      <div class="generate-bar">
+        <button class="btn btn-primary" id="generateBtn" data-i18n="btnGenerate">Generate data</button>
+        <span class="generate-hint" id="generateHint"></span>
+      </div>
+
+      <!-- Output -->
+      <section class="output-section" id="outputSection" style="display:none">
+        <div class="output-header">
+          <div class="output-tabs">
+            <button class="tab active" data-tab="json">JSON</button>
+            <button class="tab" data-tab="csv">CSV</button>
+            <button class="tab" data-tab="sql">SQL INSERT</button>
+          </div>
+          <div class="output-actions">
+            <button class="btn btn-outline btn-sm" id="copyBtn" data-i18n="btnCopy">Copy</button>
+            <button class="btn btn-outline btn-sm" id="downloadBtn" data-i18n="btnDownload">Download</button>
+          </div>
+        </div>
+        <pre id="outputContent" class="output-content"></pre>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
