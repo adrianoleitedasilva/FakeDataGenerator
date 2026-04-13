@@ -164,6 +164,37 @@ select:focus {
   display: flex;
   gap: 10px;
   align-items: center;
+  border-top: 2px solid transparent;
+  transition: border-color 0.1s, opacity 0.1s;
+}
+
+.field-row.dragging {
+  opacity: 0.35;
+}
+
+.field-row.drag-over {
+  border-top-color: #323232;
+}
+
+.drag-handle {
+  flex-shrink: 0;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  font-size: 16px;
+  cursor: grab;
+  user-select: none;
+  transition: color 0.12s;
+}
+
+.drag-handle:hover {
+  color: #323232;
+}
+
+.field-row:active .drag-handle {
+  cursor: grabbing;
 }
 
 .field-row .field-name {

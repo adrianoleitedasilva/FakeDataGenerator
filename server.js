@@ -20,6 +20,43 @@ const localeMap = {
   de: fakerDE,
 };
 
+// Mapeamento de estados brasileiros para DDDs
+const BRAZIL_STATE_DDD = {
+  'Acre':                 ['68'],
+  'Alagoas':              ['82'],
+  'Amapá':                ['96'],
+  'Amazonas':             ['92', '97'],
+  'Bahia':                ['71', '73', '74', '75', '77'],
+  'Ceará':                ['85', '88'],
+  'Distrito Federal':     ['61'],
+  'Espírito Santo':       ['27', '28'],
+  'Goiás':                ['62', '64'],
+  'Maranhão':             ['98', '99'],
+  'Mato Grosso':          ['65', '66'],
+  'Mato Grosso do Sul':   ['67'],
+  'Minas Gerais':         ['31', '32', '33', '34', '35', '37', '38'],
+  'Pará':                 ['91', '93', '94'],
+  'Paraíba':              ['83'],
+  'Paraná':               ['41', '42', '43', '44', '45', '46'],
+  'Pernambuco':           ['81', '87'],
+  'Piauí':                ['86', '89'],
+  'Rio de Janeiro':       ['21', '22', '24'],
+  'Rio Grande do Norte':  ['84'],
+  'Rio Grande do Sul':    ['51', '53', '54', '55'],
+  'Rondônia':             ['69'],
+  'Roraima':              ['95'],
+  'Santa Catarina':       ['47', '48', '49'],
+  'São Paulo':            ['11', '12', '13', '14', '15', '16', '17', '18', '19'],
+  'Sergipe':              ['79'],
+  'Tocantins':            ['63'],
+};
+
+function generateBrazilianPhone(f, ddd) {
+  const n1 = f.string.numeric({ length: 4 });
+  const n2 = f.string.numeric({ length: 4 });
+  return `(${ddd}) 9${n1}-${n2}`;
+}
+
 // Remove acentos, caracteres especiais e espaços para montar o username do email
 function toEmailUsername(name) {
   return name
@@ -65,7 +102,9 @@ function buildGenerators(f) {
     firstName:     () => f.person.firstName(),
     lastName:      () => f.person.lastName(),
     fullName:      () => f.person.fullName(),
-    email:         () => f.internet.email(),
+    motherName:    () => `${f.person.firstName('female')} ${f.person.lastName()}`,
+    fatherName:    () => `${f.person.firstName('male')} ${f.person.lastName()}`,
+    email:         () => f.internet.email().toLowerCase(),
     username:      () => f.internet.username(),
     password:      () => f.internet.password({ length: 12 }),
     phone:         () => f.phone.number(),
@@ -109,6 +148,8 @@ app.get('/api/types', (_req, res) => {
     { value: 'firstName',     label: 'First Name',     category: 'Person' },
     { value: 'lastName',      label: 'Last Name',      category: 'Person' },
     { value: 'fullName',      label: 'Full Name',      category: 'Person' },
+    { value: 'motherName',    label: "Mother's Name",  category: 'Person' },
+    { value: 'fatherName',    label: "Father's Name",  category: 'Person' },
     { value: 'jobTitle',      label: 'Job Title',      category: 'Person' },
     { value: 'email',         label: 'Email',          category: 'Internet' },
     { value: 'username',      label: 'Username',       category: 'Internet' },
@@ -160,10 +201,15 @@ app.post('/api/generate', (req, res) => {
   const f = localeMap[locale] || faker;
   const generators = buildGenerators(f);
 
-  const emailFields = fields.filter(field => field.type === 'email');
+  const emailFields  = fields.filter(field => field.type === 'email');
   const hasNameField = fields.some(field =>
     ['fullName', 'firstName', 'lastName'].includes(field.type)
   );
+  const phoneFields  = fields.filter(field => field.type === 'phone');
+  const stateField   = fields.find(field => field.type === 'state');
+  const parentFields = fields.filter(field => ['motherName', 'fatherName'].includes(field.type));
+  const lastNameField  = fields.find(field => field.type === 'lastName');
+  const fullNameField  = fields.find(field => field.type === 'fullName');
 
   const data = [];
   for (let i = 0; i < clampedCount; i++) {
@@ -173,12 +219,45 @@ app.post('/api/generate', (req, res) => {
       record[field.name || field.type] = gen ? gen() : null;
     }
 
-    // Sobrescreve email(s) com username derivado do nome gerado
+    // Sobrescreve email(s) com username derivado do nome gerado (sempre minúsculo)
     if (emailFields.length > 0 && hasNameField) {
       const username = resolveUsername(record, fields);
       if (username) {
         for (const ef of emailFields) {
-          record[ef.name] = `${username}@${f.internet.domainName()}`;
+          record[ef.name] = `${username}@${f.internet.domainName()}`.toLowerCase();
+        }
+      }
+    }
+
+    // Sobrescreve telefone(s) com DDD correspondente ao estado (pt_BR)
+    if (locale === 'pt_BR' && stateField && phoneFields.length > 0) {
+      const stateName = record[stateField.name || stateField.type];
+      const ddds = BRAZIL_STATE_DDD[stateName];
+      if (ddds) {
+        const ddd = f.helpers.arrayElement(ddds);
+        const phone = generateBrazilianPhone(f, ddd);
+        for (const pf of phoneFields) {
+          record[pf.name || pf.type] = phone;
+        }
+      }
+    }
+
+    // Sobrenome dos pais igual ao sobrenome da pessoa
+    if (parentFields.length > 0) {
+      let personLastName = null;
+      if (lastNameField) {
+        personLastName = record[lastNameField.name || lastNameField.type] || null;
+      } else if (fullNameField) {
+        const parts = String(record[fullNameField.name || fullNameField.type] || '').split(' ');
+        if (parts.length > 1) personLastName = parts[parts.length - 1];
+      }
+
+      if (personLastName) {
+        for (const pf of parentFields) {
+          const current = String(record[pf.name || pf.type] || '');
+          const parts = current.split(' ');
+          parts[parts.length - 1] = personLastName;
+          record[pf.name || pf.type] = parts.join(' ');
         }
       }
     }

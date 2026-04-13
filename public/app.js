@@ -94,6 +94,7 @@ function setLang(lang) {
 let FIELD_TYPES = [];
 let generatedData = [];
 let currentTab = 'json';
+let dragSrc = null;
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
@@ -135,7 +136,9 @@ function buildTypeOptions(selected) {
 function createFieldRow(name, type) {
   const row = document.createElement('div');
   row.className = 'field-row';
+  row.draggable = true;
   row.innerHTML = `
+    <div class="drag-handle" title="Drag to reorder">⠿</div>
     <div class="field-name">
       <input type="text" placeholder="${t('placeholderField')}" value="${name}" />
     </div>
@@ -144,10 +147,43 @@ function createFieldRow(name, type) {
     </div>
     <button class="remove-btn" title="${t('removeTitle')}">×</button>
   `;
+
   row.querySelector('.remove-btn').addEventListener('click', () => {
     row.remove();
     syncEmptyState();
   });
+
+  row.addEventListener('dragstart', e => {
+    dragSrc = row;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => row.classList.add('dragging'), 0);
+  });
+
+  row.addEventListener('dragend', () => {
+    dragSrc = null;
+    row.classList.remove('dragging');
+    document.querySelectorAll('.field-row').forEach(r => r.classList.remove('drag-over'));
+  });
+
+  row.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (row !== dragSrc) row.classList.add('drag-over');
+  });
+
+  row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+
+  row.addEventListener('drop', e => {
+    e.preventDefault();
+    row.classList.remove('drag-over');
+    if (!dragSrc || dragSrc === row) return;
+    const list = document.getElementById('fieldsList');
+    const rows = [...list.querySelectorAll('.field-row')];
+    const srcIdx = rows.indexOf(dragSrc);
+    const tgtIdx = rows.indexOf(row);
+    srcIdx < tgtIdx ? row.after(dragSrc) : row.before(dragSrc);
+  });
+
   return row;
 }
 
