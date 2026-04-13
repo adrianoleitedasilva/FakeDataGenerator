@@ -13,8 +13,10 @@ Aplicação web para gerar dados falsos e realistas para popular bancos de dados
 ## Funcionalidades
 
 - Schema builder visual — adicione e remova campos livremente
-- 38 tipos de dados organizados por categoria (Person, Internet, Location, Commerce, Finance, System…)
+- 41 tipos de dados organizados por categoria (Person, Internet, Location, Commerce, Finance, System…)
 - Consistência nome ↔ email: se o schema tiver um campo de nome e um de email, o username do email é derivado automaticamente do nome gerado (`Geraldo Silva` → `geraldosilva@dominio.com`)
+- Consistência sobrenome dos pais: se o schema incluir `motherName` ou `fatherName` junto com `lastName` ou `fullName`, o sobrenome dos pais é automaticamente ajustado para coincidir com o sobrenome da pessoa gerada
+- Consistência telefone ↔ estado (pt_BR): se o locale for Português BR e o schema tiver `state` e `phone`, o DDD do telefone é selecionado automaticamente conforme o estado gerado
 - 5 locales para os dados gerados: English, Português BR, Español, Français, Deutsch
 - Exportação em **JSON**, **CSV** e **SQL INSERT**
 - Copiar para clipboard e download do arquivo
@@ -53,6 +55,32 @@ A porta padrão é `3000`. Para usar outra porta:
 ```bash
 PORT=8080 npm start
 ```
+
+## Regras de consistência
+
+O gerador aplica automaticamente três regras de consistência entre campos relacionados:
+
+### 1. Nome → Email
+
+Se o schema incluir um campo de nome (`fullName`, `firstName` e/ou `lastName`) junto com um campo `email`, o username do email é derivado do nome gerado — sem acentos, sem espaços, tudo em minúsculo.
+
+| Campos no schema | Exemplo gerado |
+|------------------|----------------|
+| `fullName` + `email` | `Geraldo Silva` → `geraldosilva@dominio.com` |
+| `firstName` + `lastName` + `email` | `Ana` + `Souza` → `anasouza@dominio.com` |
+| `firstName` + `email` | `Carlos` → `carlos@dominio.com` |
+
+### 2. Sobrenome dos pais
+
+Se o schema incluir `motherName` ou `fatherName` junto com `lastName` ou `fullName`, o último sobrenome dos pais é substituído pelo sobrenome da pessoa gerada, mantendo a coerência familiar.
+
+**Exemplo:** pessoa `João Silva` → mãe `Maria Silva`, pai `Roberto Silva`.
+
+### 3. Telefone → DDD por estado (pt_BR)
+
+Exclusivo para o locale **Português BR**: se o schema incluir `state` e `phone`, o DDD do número de telefone é automaticamente escolhido dentre os DDDs válidos do estado gerado.
+
+**Exemplo:** estado `São Paulo` → telefone `(11) 9XXXX-XXXX`; estado `Bahia` → `(71) 9XXXX-XXXX`.
 
 ## API
 
@@ -114,7 +142,7 @@ Gera os registros com base no schema enviado.
 
 | Categoria | Tipos |
 |-----------|-------|
-| **Person** | firstName, lastName, fullName, jobTitle |
+| **Person** | firstName, lastName, fullName, motherName, fatherName, jobTitle |
 | **Internet** | email, username, password, url, ipv4, userAgent, avatarUrl |
 | **Location** | phone, city, country, state, streetAddress, zipCode, latitude, longitude |
 | **Misc** | uuid, number, float, boolean, date, datetime, color |
